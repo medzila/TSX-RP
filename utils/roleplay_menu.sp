@@ -48,6 +48,12 @@ public void OnClientPostAdminCheck(int client) {
 }
 public Action fwdCommand(int client, char[] command, char[] arg) {
 	if( StrEqual(command, "menu") ) {
+		
+		if( g_bClosed[client] == true ) {
+			openMenuGeneral(client);
+			g_bClosed[client] = false;
+		}
+		
 		openMenuInteractif(client);
 		return Plugin_Handled;
 	}
@@ -84,12 +90,12 @@ void openMenuInteractif(int client) {
 	int optionCount = 0;
 	
 	Menu menu = CreateMenu(menuOpenMenu);
-	menu.SetTitle("RolePlay");
+	menu.SetTitle("RolePlay\n ");
 	
 	if( IsValidClient(target) ) {
 		bool hear = rp_IsTargetHear(client, target);
 		
-		menu.SetTitle("RolePlay: %N", target);
+		menu.SetTitle("RolePlay: %N\n ", target);
 		
 		if( near && ((jobID >= 11 && jobID <= 81) || jobID >= 111) ) {
 			menu.AddItem("vendre", "Vendre");
@@ -121,13 +127,19 @@ void openMenuInteractif(int client) {
 		}
 		
 		
+		
+		if( hear && jobID > 0 && rp_GetPlayerZone(target) == rp_GetPlayerZone(client) && rp_GetZoneInt(client, zone_type_type) == jobID ) {
+			menu.AddItem("out", "Sortir le joueur");
+		}
+		
+		
 		if( near && rp_GetClientInt(client, i_Money) > 0 && !rp_IsClientNew(client) ) {
 			menu.AddItem("give", "Donner de l'argent");
 			optionCount++;
 		}
 	}
 	else if( rp_IsValidDoor(target) ) {
-		menu.SetTitle("RolePlay: Une porte");
+		menu.SetTitle("RolePlay: Une porte\n ");
 		
 		int doorID = rp_GetDoorID(target);
 		if( doorID > 0 && rp_GetClientKeyDoor(client, doorID) ) {
@@ -145,11 +157,7 @@ void openMenuInteractif(int client) {
 		return;
 	}
 	
-	if( g_bClosed[client] )
-		menu.AddItem("exit", "Ouvrir ce menu automatiquement");
-	else
-		menu.AddItem("exit", "Ne plus ouvrir ce menu automatiquement");
-	
+	menu.AddItem("exit", "Ne plus ouvrir ce menu automatiquement");
 	menu.Pagination = 8;
 	menu.Display(client, 30);
 	
@@ -159,7 +167,7 @@ void openMenuGeneral(int client) {
 	int jobID = rp_GetClientJobID(client);
 	
 	Menu menu = CreateMenu(menuOpenMenu);
-	menu.SetTitle("RolePlay");
+	menu.SetTitle("RolePlay\n ");
 	
 	menu.AddItem("item", "Ouvrir l'inventaire");
 	
@@ -169,11 +177,17 @@ void openMenuGeneral(int client) {
 	if( jobID == 11 || jobID == 21 || jobID == 31 || jobID == 51 || jobID == 71 || jobID == 81 || jobID == 111 || jobID == 171 || jobID == 191 || jobID == 211 || jobID == 221 ) {
 		menu.AddItem("build", "Construire");
 	}
-	
+	if( jobID >= 0 ) {
+		menu.AddItem("shownote", "Information sur mon job");
+	}
 	menu.AddItem("job", "Appeler un joueur");
 	menu.AddItem("stats", "Statistiques");
-	menu.AddItem("report", "Rappporter un mauvais comportement");
-		
+	menu.AddItem("report", "Signaler un mauvais comportement");
+	menu.AddItem("gps", "Trouver un lieu sur la carte");
+	menu.AddItem("aide", "Besoin d'aide");
+	
+	menu.Pagination = 9;
+	menu.ExitButton = false;
 	menu.Display(client, 30);
 	
 	g_bInsideMenu[client] = true;
@@ -190,7 +204,7 @@ public int menuOpenMenu(Handle hItem, MenuAction oAction, int client, int param)
 					return;
 				
 				Menu menu = CreateMenu(menuOpenMenu);
-				menu.SetTitle("RolePlay: Donner de l'argent");
+				menu.SetTitle("RolePlay: Donner de l'argent\n ");
 				if( rp_GetClientInt(client, i_Money) >= 1 ) menu.AddItem("give 1", "1$");
 				if( rp_GetClientInt(client, i_Money) >= 10 ) menu.AddItem("give 10", "10$");
 				if( rp_GetClientInt(client, i_Money) >= 100 ) menu.AddItem("give 100", "100$");
@@ -203,7 +217,7 @@ public int menuOpenMenu(Handle hItem, MenuAction oAction, int client, int param)
 			}
 			if( StrEqual(options, "exit") ) {
 				CPrintToChat(client, "{lightblue}[TSX-RP]{default} Vous pouvez réouvrir ce menu avec /menu.");
-				g_bClosed[client] = !g_bClosed[client];
+				g_bClosed[client] = false;
 				return;
 			}
 			FakeClientCommand(client, "say /%s", options);
